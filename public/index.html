@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Clientes · CRUD</title>
+
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel2: rgba(255, 255, 255, 0.08);
+        --border: rgba(255, 255, 255, 0.1);
+        --text: rgba(255, 255, 255, 0.9);
+        --muted: rgba(255, 255, 255, 0.65);
+        --muted2: rgba(255, 255, 255, 0.45);
+
+        --accent: #5eead4; /* teal */
+        --accent2: #60a5fa; /* blue */
+        --danger: #fb7185;
+        --ok: #34d399;
+
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        --r: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, Segoe UI, Inter, Arial, sans-serif;
+        background: radial-gradient(
+            800px 500px at 20% 10%,
+            rgba(94, 234, 212, 0.18),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 600px at 80% 0%,
+            rgba(96, 165, 250, 0.16),
+            transparent 55%
+          ),
+          radial-gradient(
+            900px 700px at 50% 100%,
+            rgba(251, 113, 133, 0.1),
+            transparent 60%
+          ),
+          var(--bg);
+        color: var(--text);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .wrap {
+        max-width: 1200px;
+        margin: 28px auto;
+        padding: 0 18px 40px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .title {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .title h1 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: 0.2px;
+      }
+      .subtitle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 999px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--ok);
+        box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.12);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.06),
+          rgba(255, 255, 255, 0.04)
+        );
+        border-radius: var(--r);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .card-h {
+        padding: 14px 14px 10px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .card-h h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 650;
+        letter-spacing: 0.2px;
+      }
+      .card-b {
+        padding: 14px;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1 1 180px;
+        min-width: 180px;
+      }
+      .field label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.18);
+        color: var(--text);
+        outline: none;
+        transition: border 0.15s, transform 0.05s;
+      }
+      select {
+        color-scheme: dark;
+      }
+      select option,
+      select optgroup {
+        background-color: #0f172a;
+        color: var(--text);
+      }
+      select option:checked {
+        background-color: #1f2a44;
+        color: var(--text);
+      }
+
+      input:focus,
+      select:focus {
+        border-color: rgba(94, 234, 212, 0.55);
+        box-shadow: 0 0 0 4px rgba(94, 234, 212, 0.1);
+      }
+      input[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: transform 0.05s, background 0.15s, border 0.15s,
+          opacity 0.15s;
+        font-weight: 600;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      button:hover {
+        background: rgba(255, 255, 255, 0.09);
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .btn-primary {
+        background: linear-gradient(
+          90deg,
+          rgba(94, 234, 212, 0.22),
+          rgba(96, 165, 250, 0.2)
+        );
+        border-color: rgba(94, 234, 212, 0.35);
+      }
+      .btn-primary:hover {
+        background: linear-gradient(
+          90deg,
+          rgba(94, 234, 212, 0.28),
+          rgba(96, 165, 250, 0.26)
+        );
+      }
+
+      .btn-danger {
+        border-color: rgba(251, 113, 133, 0.35);
+        background: rgba(251, 113, 133, 0.1);
+      }
+      .btn-danger:hover {
+        background: rgba(251, 113, 133, 0.14);
+      }
+
+      .searchbar {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+      }
+      .searchbar .field {
+        flex: 1 1 320px;
+        min-width: 260px;
+      }
+
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 10px;
+        line-height: 1.35;
+      }
+
+      .tablewrap {
+        overflow: auto;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.16);
+      }
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: rgba(10, 16, 30, 0.92);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 12px;
+        text-align: left;
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      tbody td {
+        padding: 12px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        vertical-align: top;
+        font-size: 13px;
+        overflow-wrap: anywhere;
+      }
+      tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .td-actions {
+        white-space: nowrap;
+      }
+      .mini {
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+      }
+
+      .statusline {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .pagination .pager {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .pagination select {
+        width: auto;
+        min-width: 72px;
+      }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        min-width: 260px;
+        max-width: 420px;
+        padding: 12px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: rgba(15, 23, 42, 0.92);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+        display: none;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .toast.show {
+        display: flex;
+      }
+      .toast .ticon {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        margin-top: 4px;
+        background: var(--ok);
+        box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.12);
+        flex: 0 0 auto;
+      }
+      .toast.err .ticon {
+        background: var(--danger);
+        box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.12);
+      }
+      .toast .ttext {
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.35;
+        white-space: pre-wrap;
+      }
+
+      .kpi {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .kpi strong {
+        color: var(--text);
+        font-size: 13px;
+      }
+      th[data-sort] {
+        cursor: pointer;
+        user-select: none;
+      }
+      th[data-sort]:hover {
+        color: var(--text);
+      }
+      th .sort {
+        margin-left: 6px;
+        opacity: 0.6;
+      }
+      th.sorted {
+        color: var(--text);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="title">
+          <h1>Clientes</h1>
+          <div class="subtitle">
+            <span class="chip"
+              ><span class="dot"></span> API <span id="apiUrlLabel"></span
+            ></span>
+            <span class="kpi"
+              >Registros: <strong id="countLabel">—</strong></span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- Form -->
+        <div class="card">
+          <div class="card-h">
+            <h2 id="formTitle">Nuevo cliente</h2>
+            <span class="chip" id="modeChip">Modo: Alta</span>
+          </div>
+
+          <div class="card-b">
+            <div class="row">
+              <div class="field" style="max-width: 140px">
+                <label>ID</label>
+                <input id="id_cliente" placeholder="id_cliente" disabled />
+              </div>
+
+              <div class="field">
+                <label>Razón social</label>
+                <input
+                  id="razon_social"
+                  placeholder="Ej: José Álvarez y Compañía"
+                />
+              </div>
+
+              <div class="field">
+                <label>CUIT</label>
+                <input
+                  id="cuit"
+                  placeholder="11 dígitos, sin guiones"
+                  inputmode="numeric"
+                />
+              </div>
+
+              <div class="field">
+                <label>Domicilio</label>
+                <input id="domicilio" placeholder="Ej: Av. Constitución 123" />
+              </div>
+
+              <div class="field" style="min-width: 220px">
+                <label>Tipo IVA</label>
+                <input id="tipo_iva" list="tipo_iva_list" placeholder="Seleccionar…" />
+                <datalist id="tipo_iva_list">
+                  <option value="Responsable Inscripto"></option>
+                  <option value="Monotributo"></option>
+                  <option value="Exento"></option>
+                  <option value="Consumidor Final"></option>
+                  <option value="No Responsable"></option>
+                </datalist>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-primary" id="btnGuardar">➕ Guardar</button>
+              <button class="btn-primary" id="btnActualizar" disabled>
+                ✅ Actualizar
+              </button>
+              <button id="btnCancelar" disabled>↩ Cancelar</button>
+            </div>
+
+            <div class="hint">
+              Tip: podés buscar por razón social, CUIT, domicilio o tipo IVA.
+              Para editar, usá “Editar” en la tabla.
+            </div>
+          </div>
+        </div>
+
+        <!-- List -->
+        <div class="card">
+          <div class="card-h">
+            <h2>Listado</h2>
+            <div class="header-actions">
+              <button class="mini" id="btnExportCsv">Exportar CSV</button>
+              <button class="mini" id="btnExportExcel">Exportar Excel</button>
+              <button class="mini" id="btnExportPdf">Exportar PDF</button>
+            </div>
+          </div>
+
+          <div class="card-b">
+            <div class="searchbar">
+              <div class="field">
+                <label>Buscar</label>
+                <input
+                  id="q"
+                  placeholder="Razón social / CUIT / domicilio / IVA"
+                />
+              </div>
+              <div class="actions" style="margin: 0">
+                <button id="btnBuscar">🔎 Buscar</button>
+                <button id="btnRefrescar">🔄 Refrescar</button>
+              </div>
+            </div>
+
+            <div class="statusline">
+              <div id="msg">—</div>
+              <div
+                id="err"
+                style="color: var(--danger); white-space: pre-wrap"
+              ></div>
+            </div>
+
+            <div style="margin-top: 12px" class="tablewrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-sort="id_cliente">
+                      ID <span class="sort"></span>
+                    </th>
+                    <th data-sort="razon_social">
+                      Razón social <span class="sort"></span>
+                    </th>
+                    <th data-sort="cuit">CUIT <span class="sort"></span></th>
+                    <th data-sort="domicilio">
+                      Domicilio <span class="sort"></span>
+                    </th>
+                    <th data-sort="tipo_iva">
+                      Tipo IVA <span class="sort"></span>
+                    </th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+              </table>
+            </div>
+            <div class="pagination">
+              <div class="pager">
+                <button class="mini" id="btnPrevPage">Anterior</button>
+                <span id="pageInfo">Pagina 1 de 1</span>
+                <button class="mini" id="btnNextPage">Siguiente</button>
+              </div>
+              <div class="pager">
+                <span>Filas</span>
+                <select id="pageSize">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+      <div class="ticon"></div>
+      <div class="ttext" id="toastText"></div>
+    </div>
+
+    <script>
+      let sortState = {
+        key: null, // columna
+        dir: "asc", // 'asc' | 'desc'
+      };
+      // ====== Config ======
+      const API_BASE = window.location.origin; // misma app/host
+      document.getElementById("apiUrlLabel").textContent = API_BASE;
+
+      const el = (id) => document.getElementById(id);
+
+      function showToast(text, isOk = true) {
+        const t = el("toast");
+        const tt = el("toastText");
+        tt.textContent = text;
+
+        t.classList.toggle("err", !isOk);
+        t.classList.add("show");
+        clearTimeout(showToast._to);
+        showToast._to = setTimeout(() => t.classList.remove("show"), 2600);
+      }
+
+      function msg(t) {
+        el("msg").textContent = t;
+      }
+      function err(t = "") {
+        el("err").textContent = t;
+      }
+
+      // ====== State ======
+      let editingId = null;
+      let currentRows = [];
+      let currentPageRows = [];
+      let currentPage = 1;
+      let pageSize = 5;
+
+      // ====== Helpers ======
+      function sortRows(rows) {
+        if (!sortState.key) return rows;
+
+        const dir = sortState.dir === "asc" ? 1 : -1;
+        const key = sortState.key;
+
+        return [...rows].sort((a, b) => {
+          let va = a[key];
+          let vb = b[key];
+
+          if (va == null) return -1 * dir;
+          if (vb == null) return 1 * dir;
+
+          // numérico
+          if (typeof va === "number" && typeof vb === "number") {
+            return (va - vb) * dir;
+          }
+
+          // string (case-insensitive, con locale)
+          return (
+            String(va).localeCompare(String(vb), "es", {
+              sensitivity: "base",
+            }) * dir
+          );
+        });
+      }
+
+      function formatCuit(d) {
+        const digits = String(d ?? "").replace(/\D/g, "");
+        if (!digits) return "";
+        if (digits.length <= 2) return digits;
+        if (digits.length <= 10) return digits.slice(0, 2) + "-" + digits.slice(2);
+        return digits.slice(0, 2) + "-" + digits.slice(2, 10) + "-" + digits.slice(10, 11);
+      }
+
+      function getFormData() {
+        return {
+          razon_social: el("razon_social").value.trim(),
+          // enviar CUIT siempre como 11 dígitos (sin guiones)
+          cuit: el("cuit").value.replace(/\D/g, "").trim(),
+          domicilio: el("domicilio").value.trim(),
+          tipo_iva: el("tipo_iva").value.trim(),
+        };
+      }
+
+      function setFormData(c) {
+        el("id_cliente").value = c?.id_cliente ?? "";
+        el("razon_social").value = c?.razon_social ?? "";
+        el("cuit").value = formatCuit(c?.cuit ?? "");
+        el("domicilio").value = c?.domicilio ?? "";
+        el("tipo_iva").value = c?.tipo_iva ?? "";
+      }
+
+      function setEditingMode(id) {
+        editingId = id;
+        const editing = Number.isInteger(id) && id > 0;
+
+        el("formTitle").textContent = editing
+          ? `Editando cliente #${id}`
+          : "Nuevo cliente";
+        el("modeChip").textContent = editing ? "Modo: Edición" : "Modo: Alta";
+
+        el("btnGuardar").disabled = editing;
+        el("btnActualizar").disabled = !editing;
+        el("btnCancelar").disabled = !editing;
+      }
+
+      function validate(data) {
+        const errors = [];
+        if (!data.razon_social) errors.push("Falta razón social");
+        if (!data.cuit) errors.push("Falta CUIT");
+        if (data.cuit && !/^\d{11}$/.test(data.cuit))
+          errors.push("CUIT inválido: debe tener 11 dígitos (sin guiones)");
+        if (!data.domicilio) errors.push("Falta domicilio");
+        if (!data.tipo_iva) errors.push("Falta tipo IVA");
+        return errors;
+      }
+
+      async function apiFetch(path, options = {}) {
+        const res = await fetch(API_BASE + path, {
+          headers: { "Content-Type": "application/json" },
+          ...options,
+        });
+
+        if (res.status === 204) return { _status: 204 };
+
+        const text = await res.text();
+        let json;
+        try {
+          json = text ? JSON.parse(text) : {};
+        } catch {
+          json = { raw: text };
+        }
+
+        if (!res.ok) {
+          const e = new Error(
+            json?.error ||
+              (json?.errors ? json.errors.join("\n") : `HTTP ${res.status}`)
+          );
+          e.status = res.status;
+          e.payload = json;
+          throw e;
+        }
+        return json;
+      }
+
+      // ====== CRUD ======
+      async function loadClientes() {
+        err("");
+        const q = el("q").value.trim();
+        const url = q
+          ? `/api/clientes?q=${encodeURIComponent(q)}`
+          : "/api/clientes";
+        const data = await apiFetch(url);
+
+        el("countLabel").textContent = data.length;
+        // renderTable(data);
+        const ordered = sortRows(data);
+        currentRows = ordered;
+        renderCurrentPage();
+        //
+        msg(`Cargados ${data.length} cliente(s).`);
+      }
+
+      function setupSorting() {
+        document.querySelectorAll("th[data-sort]").forEach((th) => {
+          th.addEventListener("click", () => {
+            const key = th.dataset.sort;
+
+            if (sortState.key === key) {
+              // alternar direccion
+              sortState.dir = sortState.dir === "asc" ? "desc" : "asc";
+            } else {
+              sortState.key = key;
+              sortState.dir = "asc";
+            }
+
+            updateSortIndicators();
+            loadClientes().catch((e) => {
+              err(e.message);
+              showToast(e.message, false);
+            });
+          });
+        });
+      }
+
+      function updateSortIndicators() {
+        document.querySelectorAll("th[data-sort]").forEach((th) => {
+          const span = th.querySelector(".sort");
+          th.classList.remove("sorted");
+          span.textContent = "";
+
+          if (th.dataset.sort === sortState.key) {
+            th.classList.add("sorted");
+            span.textContent = sortState.dir === "asc" ? "^" : "v";
+          }
+        });
+      }
+
+      function renderTable(rows) {
+        const tbody = el("tbody");
+        tbody.innerHTML = "";
+
+        for (const r of rows) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+      <td>${r.id_cliente}</td>
+      <td>${escapeHtml(r.razon_social)}</td>
+      <td>${escapeHtml(r.cuit)}</td>
+      <td>${escapeHtml(r.domicilio)}</td>
+      <td>${escapeHtml(r.tipo_iva)}</td>
+      <td class="td-actions">
+        <button class="mini" data-edit="${r.id_cliente}">Editar</button>
+        <button class="mini btn-danger" data-del="${
+          r.id_cliente
+        }">Borrar</button>
+      </td>
+    `;
+          tbody.appendChild(tr);
+        }
+
+        tbody.querySelectorAll("button[data-edit]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            try {
+              err("");
+              const id = Number(btn.dataset.edit);
+              const c = await apiFetch(`/api/clientes/${id}`);
+              setFormData(c);
+              setEditingMode(id);
+              showToast(`Cliente #${id} listo para editar.`);
+            } catch (e) {
+              err(e.message);
+              showToast(e.message, false);
+            }
+          });
+        });
+
+        tbody.querySelectorAll("button[data-del]").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const id = Number(btn.dataset.del);
+            if (!confirm(`Borrar cliente #${id}?`)) return;
+
+            try {
+              err("");
+              await apiFetch(`/api/clientes/${id}`, { method: "DELETE" });
+
+              showToast(`Cliente #${id} borrado.`);
+              if (editingId === id) {
+                setFormData(null);
+                setEditingMode(null);
+              }
+              await loadClientes();
+            } catch (e) {
+              err(e.message);
+              showToast(e.message, false);
+            }
+          });
+        });
+      }
+
+      function renderCurrentPage() {
+        const totalPages = Math.max(
+          1,
+          Math.ceil(currentRows.length / pageSize)
+        );
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        currentPageRows = currentRows.slice(start, end);
+
+        renderTable(currentPageRows);
+        updatePagination(totalPages);
+      }
+
+      function updatePagination(totalPages) {
+        el("pageInfo").textContent = `Pagina ${currentPage} de ${totalPages}`;
+        el("btnPrevPage").disabled = currentPage <= 1;
+        el("btnNextPage").disabled = currentPage >= totalPages;
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function downloadFile(filename, content, mime) {
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function toCsv(rows) {
+        const headers = ["ID", "Razon social", "CUIT", "Domicilio", "Tipo IVA"];
+        const lines = [headers.join(",")];
+        for (const r of rows) {
+          const values = [
+            r.id_cliente,
+            r.razon_social,
+            r.cuit,
+            r.domicilio,
+            r.tipo_iva,
+          ].map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`);
+          lines.push(values.join(","));
+        }
+        return lines.join("\r\n");
+      }
+
+      function toExcelHtml(rows) {
+        const headerCells = [
+          "ID",
+          "Razon social",
+          "CUIT",
+          "Domicilio",
+          "Tipo IVA",
+        ]
+          .map((h) => `<th>${escapeHtml(h)}</th>`)
+          .join("");
+        const bodyRows = rows
+          .map((r) => {
+            const cells = [
+              r.id_cliente,
+              r.razon_social,
+              r.cuit,
+              r.domicilio,
+              r.tipo_iva,
+            ]
+              .map((v) => `<td>${escapeHtml(v)}</td>`)
+              .join("");
+            return `<tr>${cells}</tr>`;
+          })
+          .join("");
+        return `
+      <html>
+        <head><meta charset="utf-8"></head>
+        <body>
+          <table>
+            <thead><tr>${headerCells}</tr></thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+      }
+
+      function toPrintHtml(rows) {
+        const headerCells = [
+          "ID",
+          "Razon social",
+          "CUIT",
+          "Domicilio",
+          "Tipo IVA",
+        ]
+          .map((h) => `<th>${escapeHtml(h)}</th>`)
+          .join("");
+        const bodyRows = rows
+          .map((r) => {
+            const cells = [
+              r.id_cliente,
+              r.razon_social,
+              r.cuit,
+              r.domicilio,
+              r.tipo_iva,
+            ]
+              .map((v) => `<td>${escapeHtml(v)}</td>`)
+              .join("");
+            return `<tr>${cells}</tr>`;
+          })
+          .join("");
+        return `
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Clientes</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; }
+            h1 { font-size: 16px; margin: 0 0 12px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+            th { background: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <h1>Listado de clientes</h1>
+          <table>
+            <thead><tr>${headerCells}</tr></thead>
+            <tbody>${bodyRows}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+      }
+
+      function exportPdf() {
+        if (!currentRows.length) {
+          showToast("No hay datos para exportar.", false);
+          return;
+        }
+        const win = window.open("", "_blank");
+        if (!win) {
+          showToast("Permite ventanas emergentes para exportar PDF.", false);
+          return;
+        }
+        win.document.write(toPrintHtml(currentRows));
+        win.document.close();
+        win.focus();
+        win.onload = () => {
+          win.print();
+          win.close();
+        };
+      }
+
+      // ====== Events ======
+      el("btnBuscar").addEventListener("click", () =>
+        loadClientes().catch((e) => {
+          err(e.message);
+          showToast(e.message, false);
+        })
+      );
+      el("btnRefrescar").addEventListener("click", () => {
+        el("q").value = "";
+        loadClientes().catch((e) => {
+          err(e.message);
+          showToast(e.message, false);
+        });
+      });
+      el("btnPrevPage").addEventListener("click", () => {
+        if (currentPage > 1) {
+          currentPage -= 1;
+          renderCurrentPage();
+        }
+      });
+      el("btnNextPage").addEventListener("click", () => {
+        const totalPages = Math.max(
+          1,
+          Math.ceil(currentRows.length / pageSize)
+        );
+        if (currentPage < totalPages) {
+          currentPage += 1;
+          renderCurrentPage();
+        }
+      });
+      el("pageSize").addEventListener("change", (ev) => {
+        pageSize = Number(ev.target.value) || 10;
+        currentPage = 1;
+        renderCurrentPage();
+      });
+      el("btnExportCsv").addEventListener("click", () => {
+        const csv = toCsv(currentRows);
+        downloadFile("clientes.csv", csv, "text/csv;charset=utf-8");
+      });
+      el("btnExportExcel").addEventListener("click", () => {
+        const html = toExcelHtml(currentRows);
+        downloadFile("clientes.xls", html, "application/vnd.ms-excel");
+      });
+      el("btnExportPdf").addEventListener("click", exportPdf);
+
+      el("q").addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") el("btnBuscar").click();
+      });
+
+      el("btnCancelar").addEventListener("click", () => {
+        setFormData(null);
+        setEditingMode(null);
+        msg("Edición cancelada.");
+        showToast("Edición cancelada.");
+      });
+
+      // CUIT: aplicar máscara visual mientras se escribe
+      el("cuit").addEventListener("input", (ev) => {
+        const raw = ev.target.value.replace(/\D/g, "");
+        ev.target.value = formatCuit(raw);
+      });
+
+      el("btnGuardar").addEventListener("click", async () => {
+        try {
+          err("");
+          const data = getFormData();
+          const errors = validate(data);
+          if (errors.length) {
+            err(errors.join("\n"));
+            showToast(errors[0], false);
+            return;
+          }
+
+          const created = await apiFetch("/api/clientes", {
+            method: "POST",
+            body: JSON.stringify(data),
+          });
+
+          showToast(`Creado cliente #${created.id_cliente}.`);
+          setFormData(null);
+          setEditingMode(null);
+          await loadClientes();
+        } catch (e) {
+          err(e.message);
+          showToast(e.message, false);
+        }
+      });
+
+      el("btnActualizar").addEventListener("click", async () => {
+        try {
+          err("");
+          if (!editingId) {
+            err("No hay cliente en edición.");
+            showToast("No hay cliente en edición.", false);
+            return;
+          }
+
+          const data = getFormData();
+          const errors = validate(data);
+          if (errors.length) {
+            err(errors.join("\n"));
+            showToast(errors[0], false);
+            return;
+          }
+
+          const updated = await apiFetch(`/api/clientes/${editingId}`, {
+            method: "PUT",
+            body: JSON.stringify(data),
+          });
+
+          showToast(`Actualizado cliente #${updated.id_cliente}.`);
+          setFormData(null);
+          setEditingMode(null);
+          await loadClientes();
+        } catch (e) {
+          err(e.message);
+          showToast(e.message, false);
+        }
+      });
+
+      // ====== Init ======
+      setEditingMode(null);
+      setupSorting();
+      loadClientes().catch((e) => {
+        err(e.message);
+        showToast(e.message, false);
+      });
+    </script>
+  </body>
+</html>

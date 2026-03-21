@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clientes - CRUD</title>
+  <style>
+    body { font-family: system-ui, Segoe UI, Arial; margin: 20px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    input, select, button { padding: 8px; font-size: 14px; }
+    input, select { min-width: 220px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+    th { background: #f3f3f3; text-align: left; }
+    .muted { color: #666; font-size: 13px; }
+    .actions button { margin-right: 6px; }
+    .error { color: #b00020; white-space: pre-wrap; }
+    .ok { color: #0a7a0a; }
+  </style>
+</head>
+<body>
+  <h2>Clientes</h2>
+  <div class="muted">API: <span id="apiUrlLabel"></span></div>
+
+  <hr />
+
+  <div class="row">
+    <input id="q" placeholder="Buscar (razón social / CUIT / domicilio / IVA)" />
+    <button id="btnBuscar">Buscar</button>
+    <button id="btnRefrescar">Refrescar</button>
+  </div>
+
+  <h3 id="formTitle">Nuevo cliente</h3>
+  <div class="row">
+    <input id="id_cliente" placeholder="id_cliente" disabled />
+    <input id="razon_social" placeholder="Razón social" />
+    <input id="cuit" placeholder="CUIT (11 dígitos, sin guiones)" />
+    <input id="domicilio" placeholder="Domicilio" />
+    <select id="tipo_iva">
+      <option value="">Tipo IVA (seleccionar)</option>
+      <option>Responsable Inscripto</option>
+      <option>Monotributo</option>
+      <option>Exento</option>
+      <option>Consumidor Final</option>
+      <option>No Responsable</option>
+    </select>
+  </div>
+
+  <div class="row" style="margin-top:10px;">
+    <button id="btnGuardar">Guardar (POST)</button>
+    <button id="btnActualizar" disabled>Actualizar (PUT)</button>
+    <button id="btnCancelar" disabled>Cancelar edición</button>
+  </div>
+
+  <div id="msg" class="muted" style="margin-top:10px;"></div>
+  <div id="err" class="error" style="margin-top:6px;"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Razón social</th>
+        <th>CUIT</th>
+        <th>Domicilio</th>
+        <th>Tipo IVA</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+<script>
+  // ====== Config ======
+  //const API_BASE = "http://localhost:3000"; // cambiá si tu API corre en otro host/puerto
+  const API_BASE = window.location.origin;
+  document.getElementById("apiUrlLabel").textContent = API_BASE;
+
+  const el = (id) => document.getElementById(id);
+  const msg = (t, ok=true) => {
+    el("msg").innerHTML = ok ? `<span class="ok">${t}</span>` : `<span class="error">${t}</span>`;
+  };
+  const err = (t="") => el("err").textContent = t;
+
+  // ====== State ======
+  let editingId = null;
+
+  // ====== Helpers ======
+  function getFormData() {
+    return {
+      razon_social: el("razon_social").value.trim(),
+      cuit: el("cuit").value.trim(),
+      domicilio: el("domicilio").value.trim(),
+      tipo_iva: el("tipo_iva").value.trim()
+    };
+  }
+
+  function setFormData(c) {
+    el("id_cliente").value = c?.id_cliente ?? "";
+    el("razon_social").value = c?.razon_social ?? "";
+    el("cuit").value = c?.cuit ?? "";
+    el("domicilio").value = c?.domicilio ?? "";
+    el("tipo_iva").value = c?.tipo_iva ?? "";
+  }
+
+  function setEditingMode(id) {
+    editingId = id;
+    const editing = Number.isInteger(id) && id > 0;
+
+    el("formTitle").textContent = editing ? `Editando cliente #${id}` : "Nuevo cliente";
+    el("btnGuardar").disabled = editing;
+    el("btnActualizar").disabled = !editing;
+    el("btnCancelar").disabled = !editing;
+  }
+
+  function validate(data) {
+    const errors = [];
+    if (!data.razon_social) errors.push("Falta razón social");
+    if (!data.cuit) errors.push("Falta CUIT");
+    if (data.cuit && !/^\d{11}$/.test(data.cuit)) errors.push("CUIT inválido: debe tener 11 dígitos (sin guiones)");
+    if (!data.domicilio) errors.push("Falta domicilio");
+    if (!data.tipo_iva) errors.push("Falta tipo IVA");
+    return errors;
+  }
+
+  async function apiFetch(path, options = {}) {
+    const res = await fetch(API_BASE + path, {
+      headers: { "Content-Type": "application/json" },
+      ...options
+    });
+
+    // DELETE puede devolver 204 sin body
+    if (res.status === 204) return { _status: 204 };
+
+    const text = await res.text();
+    let json;
+    try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+
+    if (!res.ok) {
+      const e = new Error(json?.error || (json?.errors ? json.errors.join("\n") : `HTTP ${res.status}`));
+      e.status = res.status;
+      e.payload = json;
+      throw e;
+    }
+    return json;
+  }
+
+  // ====== CRUD ======
+  async function loadClientes() {
+    err("");
+    const q = el("q").value.trim();
+    const url = q ? `/api/clientes?q=${encodeURIComponent(q)}` : "/api/clientes";
+    const data = await apiFetch(url);
+    renderTable(data);
+    msg(`Cargados: ${data.length} cliente(s).`);
+  }
+
+  function renderTable(rows) {
+    const tbody = el("tbody");
+    tbody.innerHTML = "";
+
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${r.id_cliente}</td>
+        <td>${escapeHtml(r.razon_social)}</td>
+        <td>${escapeHtml(r.cuit)}</td>
+        <td>${escapeHtml(r.domicilio)}</td>
+        <td>${escapeHtml(r.tipo_iva)}</td>
+        <td class="actions">
+          <button data-edit="${r.id_cliente}">Editar</button>
+          <button data-del="${r.id_cliente}">Borrar</button>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    }
+
+    tbody.querySelectorAll("button[data-edit]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        try {
+          err("");
+          const id = Number(btn.dataset.edit);
+          const c = await apiFetch(`/api/clientes/${id}`);
+          setFormData(c);
+          setEditingMode(id);
+          msg(`Cliente #${id} cargado para edición.`);
+        } catch (e) {
+          err(e.message);
+        }
+      });
+    });
+
+    tbody.querySelectorAll("button[data-del]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.dataset.del);
+        if (!confirm(`¿Borrar cliente #${id}?`)) return;
+
+        try {
+          err("");
+          await apiFetch(`/api/clientes/${id}`, { method: "DELETE" });
+          msg(`Cliente #${id} borrado.`);
+          if (editingId === id) {
+            setFormData(null);
+            setEditingMode(null);
+          }
+          await loadClientes();
+        } catch (e) {
+          err(e.message);
+        }
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // ====== Events ======
+  el("btnBuscar").addEventListener("click", () => loadClientes().catch(e => err(e.message)));
+  el("btnRefrescar").addEventListener("click", () => { el("q").value=""; loadClientes().catch(e => err(e.message)); });
+
+  el("btnCancelar").addEventListener("click", () => {
+    setFormData(null);
+    setEditingMode(null);
+    msg("Edición cancelada.");
+  });
+
+  el("btnGuardar").addEventListener("click", async () => {
+    try {
+      err("");
+      const data = getFormData();
+      const errors = validate(data);
+      if (errors.length) { err(errors.join("\n")); return; }
+
+      const created = await apiFetch("/api/clientes", {
+        method: "POST",
+        body: JSON.stringify(data)
+      });
+
+      msg(`Creado cliente #${created.id_cliente}.`);
+      setFormData(null);
+      setEditingMode(null);
+      await loadClientes();
+    } catch (e) {
+      err(e.message);
+    }
+  });
+
+  el("btnActualizar").addEventListener("click", async () => {
+    try {
+      err("");
+      if (!editingId) { err("No hay cliente en edición."); return; }
+
+      const data = getFormData();
+      const errors = validate(data);
+      if (errors.length) { err(errors.join("\n")); return; }
+
+      const updated = await apiFetch(`/api/clientes/${editingId}`, {
+        method: "PUT",
+        body: JSON.stringify(data)
+      });
+
+      msg(`Actualizado cliente #${updated.id_cliente}.`);
+      setFormData(null);
+      setEditingMode(null);
+      await loadClientes();
+    } catch (e) {
+      err(e.message);
+    }
+  });
+
+  // ====== Init ======
+  setEditingMode(null);
+  loadClientes().catch(e => err(e.message));
+</script>
+</body>
+</html>
