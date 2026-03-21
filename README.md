@@ -10,10 +10,10 @@ App simple CRUD para clientes.
 npm install
 ```
 
-2. Crear el archivo `clientes.env` con las variables de conexiÛn a la base de datos (ejemplo):
+2. Crear el archivo `clientes.env` con las variables de conexi√≥n a la base de datos (ejemplo):
 
 ```
-DB_SERVER=LENOVO\\SQLEXPRESS
+DB_SERVER=MiServer
 DB_NAME=MiBase
 DB_USER=usuario
 DB_PASSWORD=secreto
@@ -26,9 +26,9 @@ PORT=3000
 npm run dev
 ```
 
-La aplicaciÛn servir· `public/index.html` en `http://localhost:3000`.
+La aplicaci√≥n servir√° `public/index.html` en `http://localhost:3000`.
 
-## Tests autom·ticos
+## Tests autom√°ticos
 
 Se usan `jest` y `supertest`. Los tests isolan la dependencia de la base de datos mediante un mock de `./db`.
 
@@ -46,10 +46,10 @@ npm test
 
 ## Cambios realizados
 
-- Se agregÛ autocompletado para `Tipo IVA` (input + datalist) en `public/index.html`.
-- Se aÒadiÛ m·scara visual para el campo `CUIT` y se normaliza el valor al enviar (solo dÌgitos).
-- La exportaciÛn a Excel/CSV ahora incluye todos los registros cargados.
-- Se refactorizÛ la extracciÛn de la conexiÛn DB a `db.js` para facilitar testeo.
-- Se agregaron tests b·sicos en `__tests__/api.test.js`.
+- Se agreg√≥ autocompletado para `Tipo IVA` (input + datalist) en `public/index.html`.
+- Se a√±adi√≥ m√°scara visual para el campo `CUIT` y se normaliza el valor al enviar (solo d√≠gitos).
+- La exportaci√≥n a Excel/CSV ahora incluye todos los registros cargados.
+- Se refactoriz√≥ la extracci√≥n de la conexi√≥n DB a `db.js` para facilitar testeo.
+- Se agregaron tests b√°sicos en `__tests__/api.test.js`.
 
-Si quieres que los tests ejecuten contra una base real en lugar del mock, puedo aÒadir configuraciÛn para ello (variables de entorno y/o un archivo de configuraciÛn de test).
+Si quieres que los tests ejecuten contra una base real en lugar del mock, puedo a√±adir configuraci√≥n para ello (variables de entorno y/o un archivo de configuraci√≥n de test).
