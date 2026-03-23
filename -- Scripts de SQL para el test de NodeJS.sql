@@ -1,5 +1,7 @@
 -- Scripts de SQL para el test de Node.Js
 
+use nodejs
+
 CREATE TABLE Clientes (
     id_cliente INT IDENTITY(1,1) NOT NULL,
     razon_social NVARCHAR(200) NOT NULL,
