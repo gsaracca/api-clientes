@@ -1,3 +1,7 @@
 node_modules
-clientes.env
-
+node_modules/
+npm-debug.log
+*.env
+.env.*
+*.sql
+dist/
